@@ -122,7 +122,7 @@ def PrintMySelList(session):
         "tag":"lessonSelectLog@selectStore",
         "branch":"default",
         "params":{
-            "splanId":60
+            "splanId":splanId
         }
     }
     response = session.post(url=url,json=payload,headers=login_success_headers)
