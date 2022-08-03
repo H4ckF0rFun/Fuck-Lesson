@@ -353,28 +353,7 @@ class iCourses:
     '''
 if __name__ == '__main__':
     a = iCourses()
-    a.login('21201011','TonyWang321')
-    a.get_favorite()
-    # #要选的课,防止收藏被清空
-    # id = [
-    #     ("ad18534018" ,"202220231ad1853401801"),
-    #     ("ad18531051" ,"202220231ad1853105101"),
-    #     ("ad18531091" ,"202220231ad1853109102"),
-    #     ("ad18532015" ,"202220231ad1853201502"),
-    #     ("ad18531054" ,"202220231ad1853105401"),
-    #     ("ad18531081" ,"202220231ad1853108101"),
-    #     ("ad18531053" ,"202220231ad1853105302")
-    # ]
-    
-    # #添加到收藏列表.
-    # for i in id:
-    #     for j in a.find(i[0]):
-    #         for k in j['tcList']:
-    #             if k['JXBID'] == i[1]:
-    #                 a.add_to_favorite('FANKC',k['JXBID'],k['secretVal'])
-    # #
-    # a.get_favorite()
-    # a.PrintFavorite()
+    a.login('','')
     #选课
     a.FuckMyFavorite()
     #获取已选的课
