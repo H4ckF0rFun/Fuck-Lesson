@@ -9,3 +9,5 @@
     6.根据lsltId 选课(一次可以填写多个lsltId,多线程抢课)
 
 # fucklesson_vpn.py: 支持vpn登录 uims抢课
+
+# icourse.py 吉林大学新版选课网站抢课脚本
