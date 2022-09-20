@@ -35,12 +35,13 @@ class iCourses:
         self.captcha = ''
         self.uuid = ''
         self.token = ''
-        self.batchid = ''
+        self.batchId = ''
         self.s = requests.session()
         
         self.favorite = None
         self.select = None
-
+        ##
+        self.batchlist = None
 
         self.current = None
 
@@ -93,26 +94,72 @@ class iCourses:
         }
         response = json.loads(self.s.post(url=login_url,headers=headers,data = payload).text)
         if response['code'] == 200 and response['msg'] == '登录成功':
-            
             self.token  = response['data']['token']
-            self.batchid = response['data']['student']['electiveBatchList'][0]['code']
-
-            print('login success!')
-            print('=' * 0x40)
-            print('\t\t@XH:   %s'%response['data']['student']['XH'])
-            print('\t\t@XM:   %s'%response['data']['student']['XM'])
-            print('\t\t@ZYMC: %s'%response['data']['student']['ZYMC'])
-            print('=' * 0x40)
-            print('\t\t@name:      %s'%response['data']['student']['electiveBatchList'][0]['name'])
-            print('\t\t@BeginTime: %s'%response['data']['student']['electiveBatchList'][0]['beginTime'])
-            print('\t\t@EndTime:   %s'%response['data']['student']['electiveBatchList'][0]['endTime'])
-            print('=' * 0x40)
-
+            s = ''
+            s += 'login success!\n'
+            s += '=' * 0x40 + '\n'
+            s += '\t\t@XH:   %s'%response['data']['student']['XH']+ '\n'
+            s += '\t\t@XM:   %s'%response['data']['student']['XM']+ '\n'
+            s += '\t\t@ZYMC: %s'%response['data']['student']['ZYMC']+ '\n'
+            s += '=' * 0x40+ '\n'
+            for c in response['data']['student']['electiveBatchList']:
+                s += '\t\t@name:      %s'%c['name']+ '\n'
+                s += '\t\t@BeginTime: %s'%c['beginTime']+ '\n'
+                s += '\t\t@EndTime:   %s'%c['endTime']+ '\n'
+                s += '=' * 0x40+ '\n'
+            print(s)
+            self.batchlist = response['data']['student']['electiveBatchList']
+            
         else:
             print('login failed! ')
             print('reason: %s'%response['msg'])
             exit(0)
        # self.s sda
+    def setbatchId(self,idx):
+        url = 'https://icourses.jlu.edu.cn/xsxk/elective/user'
+
+        headers = {
+            'Host': 'icourses.jlu.edu.cn',
+            'Origin': 'https://icourses.jlu.edu.cn',
+            'Referer': 'https://icourses.jlu.edu.cn/xsxk/profile/index.html',
+            'Authorization':self.token , 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
+        }
+        
+        try:
+            self.batchId = self.batchlist[idx]['code']
+        except:
+            print('No such batch Id')
+            return
+        
+        payload = {
+            'batchId':self.batchId
+        }
+        d = json.loads(self.s.post(url=url,headers=headers,data=payload).text)
+        if 200 != d['code']:
+            print("set batchid failed")
+            return 
+        c = self.batchlist[idx]     
+        s = ''    
+        s += '=' * 0x40+ '\n'
+        s += '\t\t@name:      %s'%c['name']+ '\n'
+        s += '\t\t@BeginTime: %s'%c['beginTime']+ '\n'
+        s += '\t\t@EndTime:   %s'%c['endTime']+ '\n'
+        s += '=' * 0x40 + '\n'
+        print(s)
+
+
+        url = 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchId
+
+        headers = {
+            'Host': 'icourses.jlu.edu.cn',
+            'Origin': 'https://icourses.jlu.edu.cn',
+            'Referer': 'https://icourses.jlu.edu.cn/xsxk/profile/index.html',
+            'Authorization':self.token , 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
+        }
+        #为什么这里必须要请求一次连接
+        self.s.get(url=url,headers=headers)
 
     def del_lesson(self,ClassType,ClassId,SecretVal):
         post_url = 'https://icourses.jlu.edu.cn/xsxk/elective/clazz/del'
@@ -122,6 +169,7 @@ class iCourses:
             'Origin': 'https://icourses.jlu.edu.cn',
             'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchid,
             'Authorization':self.token , 
+            'batchId': self.batchId,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
 
@@ -144,13 +192,13 @@ class iCourses:
         headers = {
             'Host': 'icourses.jlu.edu.cn',
             'Origin': 'https://icourses.jlu.edu.cn',
-            'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchid,
+            'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchId,
             'Authorization':self.token , 
+            'batchId': self.batchId,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
 
         response = json.loads(self.s.post(url=post_url,headers=headers).text)
-
         if response['code'] == 200:
             self.select = response['data']
         else:
@@ -164,12 +212,16 @@ class iCourses:
         headers = {
             'Host': 'icourses.jlu.edu.cn',
             'Origin': 'https://icourses.jlu.edu.cn',
-            'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchid,
+            'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchId,
             'Authorization':self.token , 
+            'batchId': self.batchId,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
-
-        response = json.loads(self.s.post(url = post_url,headers=headers).text)
+        cookies = {
+            'Authorization':self.token
+        }
+        t = self.s.post(url = post_url,headers=headers,cookies=cookies)
+        response = json.loads(t.text)
         if response['code'] == 200:
             self.favorite = response['data']
         else:
@@ -184,8 +236,9 @@ class iCourses:
         headers = {
             'Host': 'icourses.jlu.edu.cn',
             'Origin': 'https://icourses.jlu.edu.cn',
-            'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchid,
+            'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchId,
             'Authorization':self.token , 
+            'batchId': self.batchId,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
 
@@ -207,6 +260,7 @@ class iCourses:
             'Origin': 'https://icourses.jlu.edu.cn',
             'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchid,
             'Authorization':self.token , 
+            'batchId': self.batchId,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
 
@@ -234,6 +288,7 @@ class iCourses:
             'Origin': 'https://icourses.jlu.edu.cn',
             'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchid,
             'Authorization':self.token , 
+            'batchId': self.batchId,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
 
@@ -276,6 +331,7 @@ class iCourses:
             code = response['code']
             msg = response['msg']
 
+            print(msg)
             self.mutex.acquire()
 
             DEBUG_REQUEST_COUNT += 1
@@ -353,11 +409,15 @@ class iCourses:
     '''
 if __name__ == '__main__':
     a = iCourses()
-    a.login('','')
-    #选课
-    a.FuckMyFavorite()
-    #获取已选的课
-    a.get_select()
-    a.PrintSelect()
+    a.login('','.')
+    a.setbatchId(int(input("Please input batch id")))
+
+    a.get_favorite()
+    # #选课
+    a.PrintFavorite()
+    # a.FuckMyFavorite()
+    # #获取已选的课
+    # a.get_select()
+    # a.PrintSelect()
 
     print('DEBUG_REQUEST_COUNT:%d \n' % DEBUG_REQUEST_COUNT)
