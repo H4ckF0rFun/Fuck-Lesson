@@ -13,7 +13,7 @@ from urllib3.exceptions import InsecureRequestWarning
  
 urllib3.disable_warnings(InsecureRequestWarning)
 
-WorkThreadCount = 24
+WorkThreadCount = 8
 
 
 DEBUG_REQUEST_COUNT = 0
@@ -331,7 +331,6 @@ class iCourses:
             code = response['code']
             msg = response['msg']
 
-            print(msg)
             self.mutex.acquire()
 
             DEBUG_REQUEST_COUNT += 1
@@ -346,7 +345,7 @@ class iCourses:
                         break       # 
                     if code == 500 :
                         if msg == '该课程已在选课结果中':
-                            print('select [%s] success'%Name)
+                            print('[%s] %s'%(Name,msg))
                             self.current[clazzId] = 'done'
                             self.mutex.release()
                             break
@@ -409,15 +408,15 @@ class iCourses:
     '''
 if __name__ == '__main__':
     a = iCourses()
-    a.login('','.')
-    a.setbatchId(int(input("Please input batch id")))
-
+    a.login('','')
+    #a.setbatchId(int(input("Please input batch id (start from 0)")))
+    a.setbatchId(0)
     a.get_favorite()
     # #选课
     a.PrintFavorite()
-    # a.FuckMyFavorite()
+    a.FuckMyFavorite()
     # #获取已选的课
-    # a.get_select()
-    # a.PrintSelect()
+    a.get_select()
+    a.PrintSelect()
 
     print('DEBUG_REQUEST_COUNT:%d \n' % DEBUG_REQUEST_COUNT)
