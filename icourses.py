@@ -44,6 +44,8 @@ class iCourses:
         self.batchlist = None
 
         self.current = None
+        
+        self.try_if_capacity_full = True
 
     def login(self,username,password):
         index  ='https://icourses.jlu.edu.cn/'
@@ -326,8 +328,11 @@ class iCourses:
         global DEBUG_REQUEST_COUNT
         
         while True:
-            response = tmp.select_favorite(clazzType,clazzId,SecretVal)
-
+            try:
+                response = tmp.select_favorite(clazzType,clazzId,SecretVal)
+            except :
+                break
+            
             code = response['code']
             msg = response['msg']
 
@@ -336,13 +341,15 @@ class iCourses:
             DEBUG_REQUEST_COUNT += 1
 
             if self.current.get(clazzId) != None:
-
+                
+                #正在抢课。
                 if self.current[clazzId] == 'doing':
                     if code == 200:
                         print('select [%s] success'%Name)
                         self.current[clazzId] = 'done'
                         self.mutex.release()
                         break       # 
+                    
                     if code == 500 :
                         if msg == '该课程已在选课结果中':
                             print('[%s] %s'%(Name,msg))
@@ -352,14 +359,21 @@ class iCourses:
 
                         #时间未开始继续尝试.
                         if msg == '本轮次选课暂未开始':
+                            print('本轮次选课暂未开始')
                             self.mutex.release()
                             continue
                         #
-                        print('[%s] %s'%(Name,msg))
-                        self.current[clazzId] = 'done'
-                        self.mutex.release()                #课容量已满.....
+                        
+                        if msg == '课容量已满':
+                            self.mutex.release()
+                            if self.try_if_capacity_full:
+                                continue
+                            else:
+                                break
+                                 
+                        print('[%s] %s'%(Name,msg))         #错误信息,继续尝试...
+                        self.mutex.release()
                         break
-
                     else:
                         print('[%d]: failed,try again'%code)
                         self.mutex.release()
@@ -408,8 +422,8 @@ class iCourses:
     '''
 if __name__ == '__main__':
     a = iCourses()
-    a.login('','')
-    #a.setbatchId(int(input("Please input batch id (start from 0)")))
+    a.login('21210710','721566701qaz.')
+    a.setbatchId(int(input("Please input batch id (start from 0)")))
     a.setbatchId(0)
     a.get_favorite()
     # #选课
