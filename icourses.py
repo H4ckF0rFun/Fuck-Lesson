@@ -422,7 +422,7 @@ class iCourses:
     '''
 if __name__ == '__main__':
     a = iCourses()
-    a.login('21210710','721566701qaz.')
+    a.login('这里写账号','这里写密码')
     a.setbatchId(int(input("Please input batch id (start from 0)")))
     a.setbatchId(0)
     a.get_favorite()
