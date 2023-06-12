@@ -1,22 +1,30 @@
 from copy import copy, deepcopy
-from email import header
+from Cryptodome.Cipher import AES
+
+import time
+import ddddocr
 import threading
 from urllib import response
 import requests
 import base64
-from Cryptodome.Cipher import AES
 import json
 import os
-
+import sys
 import urllib3
+
 from urllib3.exceptions import InsecureRequestWarning
- 
+
+
+
+if len(sys.argv) < 4:
+    print('Usage: %s username password batchId <loop>' % sys.argv[0])
+    exit(-1)
+
+DEBUG_REQUEST_COUNT = 0
 urllib3.disable_warnings(InsecureRequestWarning)
 
 WorkThreadCount = 8
-
-
-DEBUG_REQUEST_COUNT = 0
+ocr = ddddocr.DdddOcr()
 
 def pkcs7padding(data, block_size=16):
     if type(data) != bytearray and type(data) != bytes:
@@ -25,7 +33,6 @@ def pkcs7padding(data, block_size=16):
     return data + bytearray([pl for i in range(pl)])
 
 class iCourses:
-
     mutex = threading.Lock()
 
     def __init__(self):
@@ -38,13 +45,13 @@ class iCourses:
         self.batchId = ''
         self.s = requests.session()
         
+        self.is_login = False
         self.favorite = None
         self.select = None
-        ##
         self.batchlist = None
 
         self.current = None
-        
+        self.error_code = 0
         self.try_if_capacity_full = True
 
     def login(self,username,password):
@@ -81,11 +88,7 @@ class iCourses:
         #
         self.uuid = data['data']['uuid']
         captcha = data['data']['captcha']
-        with open('tmp.png','wb') as file:
-            file.write(base64.b64decode(captcha[captcha.find(',') + 1:]))
-        os.startfile('tmp.png')
-        self.captcha = input('please input captcha> ')
-        #
+        self.captcha = ocr.classification(base64.b64decode(captcha[captcha.find(',') + 1:]))
         login_url = 'https://icourses.jlu.edu.cn/xsxk/auth/login'
 
         payload = {
@@ -94,6 +97,7 @@ class iCourses:
             'captcha' : self.captcha,
             'uuid' : self.uuid
         }
+        
         response = json.loads(self.s.post(url=login_url,headers=headers,data = payload).text)
         if response['code'] == 200 and response['msg'] == '登录成功':
             self.token  = response['data']['token']
@@ -111,11 +115,13 @@ class iCourses:
                 s += '=' * 0x40+ '\n'
             print(s)
             self.batchlist = response['data']['student']['electiveBatchList']
-            
+            self.is_login = True
+            return True
         else:
             print('login failed! ')
             print('reason: %s'%response['msg'])
-            exit(0)
+            return False
+        
        # self.s sda
     def setbatchId(self,idx):
         url = 'https://icourses.jlu.edu.cn/xsxk/elective/user'
@@ -142,6 +148,7 @@ class iCourses:
             print("set batchid failed")
             return 
         c = self.batchlist[idx]     
+        print('Selected BatchId:')
         s = ''    
         s += '=' * 0x40+ '\n'
         s += '\t\t@name:      %s'%c['name']+ '\n'
@@ -149,7 +156,6 @@ class iCourses:
         s += '\t\t@EndTime:   %s'%c['endTime']+ '\n'
         s += '=' * 0x40 + '\n'
         print(s)
-
 
         url = 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchId
 
@@ -187,6 +193,7 @@ class iCourses:
             print('del success!')
         else:
             print('del failed: %s'%response['msg'])
+    
     #已选课程
     def get_select(self):
         post_url =  'https://icourses.jlu.edu.cn/xsxk/elective/select'
@@ -207,7 +214,7 @@ class iCourses:
             print('get_select failed :%s'%response['msg'])
         pass
 
-    #收藏课程
+    #获取收藏课程列表.
     def get_favorite(self):
         post_url = 'https://icourses.jlu.edu.cn/xsxk/sc/clazz/list'
 
@@ -230,7 +237,7 @@ class iCourses:
             print('get_favorite failed :%s'%response['msg'])
 
 
-
+    # 选择一个课的接口...
     def select_favorite(self,ClassType,ClassId,SecretVal):
         #在收藏页面添加的接口和在主修课程页面添加的接口不一样。
         post_url = 'https://icourses.jlu.edu.cn/xsxk/sc/clazz/addxk'
@@ -260,28 +267,45 @@ class iCourses:
         headers = {
             'Host': 'icourses.jlu.edu.cn',
             'Origin': 'https://icourses.jlu.edu.cn',
-            'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchid,
+            'Referer': 'https://icourses.jlu.edu.cn/xsxk/elective/grablessons?batchId=' + self.batchId,
             'Authorization':self.token , 
             'batchId': self.batchId,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
 
         payload = {
-            "teachingClassType":"FANKC",        #貌似只能从主修课程里面选择?
+            "campus": "01",                     # 校区.
+            "teachingClassType":"TJKC",        # FANKC 或者是 TJKC
             "pageNumber":1,
-            "pageSize":999999,
+            "pageSize":999999,                  #列出所有.
             "orderBy":"",
             'KEY':key
         }
 
         response = json.loads(self.s.post(url=post_url,headers=headers,json=payload).text)
 
+        '''
+            课程信息:
+                每一个老师的教学班 
+        '''
+        
         if response['code'] == 200:
-            return response['data']['rows']
+            for item in response['data']['rows']:
+                print("%-20s %-10s %-10s %-20s"%(
+                    item['KCM'],item['KCLB'],item['KCXZ'],item['KKDW']
+                ))
+                
+                for tech in item["tcList"]:
+                    print(' ' * 8 + '%-20s %-10s %-20d %-20s '%(
+                       tech['JXBID'],tech['SKJS'],tech['classCapacity'],tech['TJBJ']
+                    ))
+                    
+                print('')
         else:
             print('get all lesson failed: %s'%response['msg'])
 
 
+    #添加到收藏课程列表.clazzID如何确定
     def add_to_favorite(self,clazzType,clazzId,SecretVal):
         post_url = 'https://icourses.jlu.edu.cn/xsxk/sc/clazz/add'
 
@@ -295,8 +319,8 @@ class iCourses:
         }
 
         payload = {
-            "clazzType":clazzType,        #貌似只能从主修课程里面选择?,查看全校课程里面没有选课按钮....
-            "clazzId":clazzId,
+            "clazzType":clazzType,          #貌似只能从主修课程里面选择?,查看全校课程里面没有选课按钮....
+            "clazzId":clazzId,              # 
             "secretVal":SecretVal,
         }
 
@@ -316,6 +340,8 @@ class iCourses:
 
         print('=' * 48)
 
+
+    #普通的选课(对收藏中的所有课都选择,)
     def SelectMyFavorite(self):
         if self.favorite != None:
             for item in self.favorite:
@@ -341,7 +367,6 @@ class iCourses:
             DEBUG_REQUEST_COUNT += 1
 
             if self.current.get(clazzId) != None:
-                
                 #正在抢课。
                 if self.current[clazzId] == 'doing':
                     if code == 200:
@@ -350,7 +375,7 @@ class iCourses:
                         self.mutex.release()
                         break       # 
                     
-                    if code == 500 :
+                    elif code == 500 :
                         if msg == '该课程已在选课结果中':
                             print('[%s] %s'%(Name,msg))
                             self.current[clazzId] = 'done'
@@ -363,8 +388,8 @@ class iCourses:
                             self.mutex.release()
                             continue
                         #
-                        
                         if msg == '课容量已满':
+                            print(Name + "课容量已满")
                             self.mutex.release()
                             if self.try_if_capacity_full:
                                 continue
@@ -374,12 +399,16 @@ class iCourses:
                         print('[%s] %s'%(Name,msg))         #错误信息,继续尝试...
                         self.mutex.release()
                         break
+                    elif code == 401:                       #被顶下去了,重新登录
+                        print(msg)
+                        self.error_code = 401
+                        self.mutex.release()
+                        break
                     else:
                         print('[%d]: failed,try again'%code)
                         self.mutex.release()
                         continue
                 else:
-                    #ok exit 
                     self.mutex.release()
                     break
             else:
@@ -421,16 +450,36 @@ class iCourses:
     FANKC 主修课程
     '''
 if __name__ == '__main__':
-    a = iCourses()
-    a.login('这里写账号','这里写密码')
-    a.setbatchId(int(input("Please input batch id (start from 0)")))
-    a.setbatchId(0)
-    a.get_favorite()
-    # #选课
-    a.PrintFavorite()
-    a.FuckMyFavorite()
-    # #获取已选的课
-    a.get_select()
-    a.PrintSelect()
-
-    print('DEBUG_REQUEST_COUNT:%d \n' % DEBUG_REQUEST_COUNT)
+    while True:
+        failed_count = 999999999999
+        a = iCourses()
+        
+        #尝试登录...
+        for i in range(failed_count):
+            if a.login(sys.argv[1],sys.argv[2]):
+                break
+            time.sleep(0.02)
+          
+        if a.is_login == False:
+            print('登录失败')
+            exit(0)
+        
+        a.setbatchId(int(sys.argv[3]))        
+        a.get_favorite()
+        #
+        a.PrintFavorite()
+        a.FuckMyFavorite()
+        
+        if a.error_code != 0:
+            print('error: ' + str(a.error_code))
+            continue
+        
+        #获取已选的课
+        a.get_select()
+        a.PrintSelect()
+        print('DEBUG_REQUEST_COUNT:%d \n' % DEBUG_REQUEST_COUNT)
+        
+        if len(sys.argv) == 4:
+            break
+        time.sleep(0.02)
+        
