@@ -32,6 +32,6 @@ python3 ./icourse.py username password batch_id [ loop (optional)]
 
 ### 具体的例子:
 
-```nasm
+```bash
 python3 ./icourse.py 21210000 aaaaaaaa 0 
 ```
