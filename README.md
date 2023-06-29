@@ -1,13 +1,37 @@
-## 吉林大学抢课脚本,emmmm目前只支持uims.jlu.edu.cn登录
-### python2.7执行
-### 使用方法:
-    1.python fuck.py
-    2.输入账号和密码
-    3.输入验证码登录
-    4.获取课程lslId
-    5.获取课程lsltId
-    6.根据lsltId 选课(一次可以填写多个lsltId,多线程抢课)
+# icourse
 
-### fucklesson_vpn.py: 支持vpn登录 uims抢课
+### 如何下载:
 
-## icourse.py 吉林大学新版选课网站抢课脚本 (python 3.10)
+1. 执行下面的命令
+
+```nasm
+git clone https://github.com/H4ckF0rFun/Fuck-Lesson.git
+```
+
+1. 安装python3 依赖库
+
+```nasm
+python3 -m pip install -r requirement.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+### 食用方法:
+
+1. 先在网站上把要选的课加进收藏列表
+2. 执行下面的命令
+
+```nasm
+python3 ./icourse.py username password batch_id [ loop (optional)]
+```
+
+### 参数说明:
+
+1. username : 你的账号
+2. password : 你的密码
+3. batch_id : 选课批次, 就是在网站刚登录进去的时候弹出的那个选课批次，一般情况下写0就行
+4. loop: 指的是如果都抢到了的话，就重新登录继续再抢，一直循环 (正常情况下是 直接退出了。主要是为了防止服务器重新刷新数据，导致已经选择的课都没了)
+
+### 具体的例子:
+
+```nasm
+python3 ./icourse.py 21210000 aaaaaaaa 0 
+```
