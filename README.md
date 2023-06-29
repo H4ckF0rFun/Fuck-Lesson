@@ -1,5 +1,5 @@
 ## 吉林大学抢课脚本,emmmm目前只支持uims.jlu.edu.cn登录
-### python2.7执行,(windows 控制台输出是ansi,所以脚本里面好几处都加了 .encode("gbk")
+### python2.7执行
 ### 使用方法:
     1.python fuck.py
     2.输入账号和密码
