@@ -4,13 +4,13 @@
 
 1. 执行下面的命令
 
-```nasm
+```bash
 git clone https://github.com/H4ckF0rFun/Fuck-Lesson.git
 ```
 
 1. 安装python3 依赖库
 
-```nasm
+```bash
 python3 -m pip install -r requirement.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
@@ -19,7 +19,7 @@ python3 -m pip install -r requirement.txt -i https://pypi.tuna.tsinghua.edu.cn/s
 1. 先在网站上把要选的课加进收藏列表
 2. 执行下面的命令
 
-```nasm
+```bash
 python3 ./icourse.py username password batch_id [ loop (optional)]
 ```
 
