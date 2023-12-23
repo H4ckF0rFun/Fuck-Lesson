@@ -8,7 +8,7 @@
 git clone https://github.com/H4ckF0rFun/Fuck-Lesson.git
 ```
 
-1. 安装python3 依赖库
+2. 安装python3 依赖库
 
 ```bash
 python3 -m pip install -r requirement.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
