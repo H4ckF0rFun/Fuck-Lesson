@@ -35,3 +35,6 @@ python3 ./icourse.py username password batch_id [ loop (optional)]
 ```bash
 python3 ./icourse.py 21210000 aaaaaaaa 0 
 ```
+
+---
+如果你觉得有用,请给我一个小小的star ❤❤❤
