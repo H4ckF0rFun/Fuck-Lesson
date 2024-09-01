@@ -1,14 +1,12 @@
-from copy import copy, deepcopy
+from copy import deepcopy
 from Cryptodome.Cipher import AES
 
 import time
 import ddddocr
 import threading
-from urllib import response
 import requests
 import base64
 import json
-import os
 import sys
 import urllib3
 
@@ -81,7 +79,7 @@ class iCourses:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
         try:
-            data = json.loads(self.s.post(url=get_url,headers=headers).text)
+            data = json.loads(self.s.post(url=get_url,headers=headers,verify=False).text)
         except:
             print("get captcha failed!")
             exit(0)
@@ -98,7 +96,7 @@ class iCourses:
             'uuid' : self.uuid
         }
         
-        response = json.loads(self.s.post(url=login_url,headers=headers,data = payload).text)
+        response = json.loads(self.s.post(url=login_url,headers=headers,data = payload,verify=False).text)
         if response['code'] == 200 and response['msg'] == '登录成功':
             self.token  = response['data']['token']
             s = ''
@@ -143,7 +141,7 @@ class iCourses:
         payload = {
             'batchId':self.batchId
         }
-        d = json.loads(self.s.post(url=url,headers=headers,data=payload).text)
+        d = json.loads(self.s.post(url=url,headers=headers,data=payload,verify=False).text)
         if 200 != d['code']:
             print("set batchid failed")
             return 
@@ -167,7 +165,7 @@ class iCourses:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
         #为什么这里必须要请求一次连接
-        self.s.get(url=url,headers=headers)
+        self.s.get(url=url,headers=headers,verify=False)
 
     def del_lesson(self,ClassType,ClassId,SecretVal):
         post_url = 'https://icourses.jlu.edu.cn/xsxk/elective/clazz/del'
@@ -187,7 +185,7 @@ class iCourses:
             'secretVal' : SecretVal,
             'source':'yxkcyx'
         }
-        response = json.loads(self.s.post(url=post_url,headers=headers,data=payload).text)
+        response = json.loads(self.s.post(url=post_url,headers=headers,data=payload,verify=False).text)
         
         if response['code'] == 200:
             print('del success!')
@@ -207,7 +205,7 @@ class iCourses:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62',
         }
 
-        response = json.loads(self.s.post(url=post_url,headers=headers).text)
+        response = json.loads(self.s.post(url=post_url,headers=headers,verify=False).text)
         if response['code'] == 200:
             self.select = response['data']
         else:
@@ -229,7 +227,7 @@ class iCourses:
         cookies = {
             'Authorization':self.token
         }
-        t = self.s.post(url = post_url,headers=headers,cookies=cookies)
+        t = self.s.post(url = post_url,headers=headers,cookies=cookies,verify=False)
         response = json.loads(t.text)
         if response['code'] == 200:
             self.favorite = response['data']
@@ -282,7 +280,7 @@ class iCourses:
             'KEY':key
         }
 
-        response = json.loads(self.s.post(url=post_url,headers=headers,json=payload).text)
+        response = json.loads(self.s.post(url=post_url,headers=headers,json=payload,verify=False).text)
 
         '''
             课程信息:
@@ -324,7 +322,7 @@ class iCourses:
             "secretVal":SecretVal,
         }
 
-        return json.loads(self.s.post(url=post_url,headers=headers,data=payload).text)
+        return json.loads(self.s.post(url=post_url,headers=headers,data=payload,verify=False).text)
 
     def PrintSelect(self):
         print("="*20 + 'My Select' + '='*20)
@@ -384,7 +382,7 @@ class iCourses:
 
                         #时间未开始继续尝试.
                         if msg == '本轮次选课暂未开始':
-                            print('本轮次选课暂未开始')
+                            print('[%s]本轮次选课暂未开始'%(Name))
                             self.mutex.release()
                             continue
                         #
@@ -395,7 +393,6 @@ class iCourses:
                                 continue
                             else:
                                 break
-                                 
                         print('[%s] %s'%(Name,msg))         #错误信息,继续尝试...
                         self.mutex.release()
                         break
@@ -459,7 +456,6 @@ if __name__ == '__main__':
             if a.login(sys.argv[1],sys.argv[2]):
                 break
             time.sleep(0.02)
-          
         if a.is_login == False:
             print('登录失败')
             exit(0)
